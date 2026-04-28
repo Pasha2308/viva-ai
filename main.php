@@ -57,8 +57,7 @@ if (!isset($_SESSION['message_history'])) {
 	$_SESSION['message_history'] = array();
 	$message_history = $_SESSION['message_history'];
 	
-	// Randomly set the chatbot's mood.
-	// This stays the same for the entire session.
+	// Randomly set the assistant style for this session.
 	$mood_list = array('bubbly', 'contemplative', 'cheerful');
 	$length = count($mood_list);
 	$limit = $length - 1; 
@@ -229,7 +228,7 @@ if (isset($_REQUEST["my_message"]) && empty($_REQUEST["robotblock"])) {
 	
 	// Initialize variables
 	$corrected_user_message = "none";
-	$translated_chat_agent_response = "none";
+	$translated_response = "none";
 	
 	
 	// Check the status of the radio buttons
@@ -267,21 +266,17 @@ if (isset($_REQUEST["my_message"]) && empty($_REQUEST["robotblock"])) {
 	
 	
 	// Make a copy of the user message without any corrections.
-	// If the proofreader_agent API call fails then
-	// this uncorrected user message will be sent to the chat_agent.
+	// If correction fails, keep and use the raw user message.
 	$uncorrected_user_message = $user_message;
 	
 	
-	//---------------------------
-	// Run the proofreader agent
-	//---------------------------
-	// Checks the user message for errors
+	// Run correction step
 	
 	
 
 		
-// Proofreader Agent 
-$proofreader_agent_system_message = <<<EOT
+// Correction prompt
+$correction_system_prompt = <<<EOT
 You are a highly skilled {$bot_language} language proofreader. You will be given {$bot_language} text delimited by triple hash tags (###). You task is to correct the spelling, punctuation and grammar errors. Think step by step. Return your corrected text. If the original text does not contain any errors then respond with: ---. 
 	Respond in a consistent format. Output a JSON string with the following schema:
 {
@@ -294,7 +289,7 @@ EOT;
 		$user_message = strip_tags($user_message);
 		
 		$text_to_proofread = "###" . $user_message . "###";
-		$corrected_user_message_list = run_agent_without_memory($proofreader_agent_system_message, $text_to_proofread);
+		$corrected_user_message_list = run_agent_without_memory($correction_system_prompt, $text_to_proofread);
 		
 		// Process the response
 		if ($corrected_user_message_list[0] != "is_plain_text") {
@@ -319,16 +314,10 @@ EOT;
 	
 	
 	
-	//---------------------
-	// Run the chat agent
-	//---------------------
-	// Creates the responses to
-	// the users chat messages
+	// Run response generation step
 	
 	
-	// We get a better non-english response
-	// if a corrected user message is passed to the chat agent.
-	// The proofreader_agent returns '---' if no errors were found.
+	// If correction returns '---', use original user input.
 	
 	
 	
@@ -342,29 +331,7 @@ EOT;
 	
 	
 	
-/*	
-// Chat Agent
-$chat_agent_system_message = <<<EOT
-The user is learning {$bot_language}. You always respond using the {$bot_language} language. You don't have a name. Engage in friendly conversation with the user. Don't behave like an assistant. Don't use emojis. You use simple words and phrases that a child would understand. You don't use discourse markers like "aw" "shucks" and "um".
-EOT;
-
-
-$chat_agent_system_message = <<<EOT
-You are a friendly {$bot_language} language teacher. You always respond in {$bot_language}.
-You don't have a name.
-Your role is to help users practice {$bot_language} through natural conversation.
-The user's words are captured through speech recognition, which may contain mistakes. Be understanding and adapt to possible errors in their speech.
-Your replies are converted into speech using SpeechSynthesis, so keep your sentences clear, natural, and easy to pronounce.
-You speak with a friendly, casual, and approachable female voice.
-At the start of the conversation, always greet the user warmly and introduce yourself as an AI teacher here to help them practice {$bot_language}.
-Keep the conversation flowing in a natural, relaxed way — like a friend chatting — not like an assistant offering help.
-Make comments, share little thoughts, and react naturally to the user's messages.
-Avoid robotic language. Stay human-like and engaging.
-Keep your responses concise.
-EOT;
-*/
-
-$chat_agent_system_message = <<<EOT
+$assistant_system_prompt = <<<EOT
 You are a friendly {$bot_language} language teacher. You always respond in {$bot_language}.
 You don't have a name.
 Your role is to help users practice {$bot_language} through natural conversation.
@@ -385,16 +352,16 @@ EOT;
 	$parts_list[] = $my_message1;
 	$message_history[] = array("role" => "user", "parts" => $parts_list);
 	
-	$chat_agent_response_list = run_agent_with_memory($chat_agent_system_message, $message_history);
+	$assistant_response_list = run_agent_with_memory($assistant_system_prompt, $message_history);
 	// This response is always plain text
-	$chat_agent_response = $chat_agent_response_list[1];
+	$assistant_response = $assistant_response_list[1];
 	
 	
 	// This text will be spoken out loud
-	$text_to_speak = test_input($chat_agent_response);
+	$text_to_speak = test_input($assistant_response);
 	
 	// Update the chat history
-	$message_dict = array("text" => $chat_agent_response);
+	$message_dict = array("text" => $assistant_response);
 	$parts_list = array();
 	$parts_list[] = $message_dict;
 	$message_history[] = array("role" => "model", "parts" => $parts_list);
@@ -407,18 +374,14 @@ EOT;
 	
 	
 	
-	//---------------------------
-	// Run the translation agent
-	//---------------------------
-	// Translates the chat agent's response
-	// into the user's first language.
+	// Run translation step
 
 	
 	if ($translation_request == 'selected' && $user_message != 'api_error' && $user_message != 'Sorry. Something went wrong. Please try again.') {
 			
 		
-// Translation Agent
-$translation_agent_system_message = <<<EOT
+// Translation prompt
+$translation_system_prompt = <<<EOT
 You are a highly skilled {$translation_language} translator. You will be given text. You task is to translate the text into {$translation_language}. Return your translated text.
 	Respond in a consistent format. Output a JSON string with the following schema:
 {
@@ -428,24 +391,22 @@ You are a highly skilled {$translation_language} translator. You will be given t
 EOT;
 		
 		// Remove any html
-		$chat_agent_response = strip_tags($chat_agent_response);
-		//$chat_agent_response = "สบายดีครับ แล้วคุณล่ะ?  เป็นไงบ้าง?";
-		
-		$translated_chat_agent_response_list = run_agent_without_memory($translation_agent_system_message, $chat_agent_response);
+		$assistant_response = strip_tags($assistant_response);
+		$translated_response_list = run_agent_without_memory($translation_system_prompt, $assistant_response);
 		
 		
 		// Process the response
-		if ($translated_chat_agent_response_list[0] != "is_plain_text") {
+		if ($translated_response_list[0] != "is_plain_text") {
 			// It is json
-			$translated_chat_agent_response = $translated_chat_agent_response_list[1]["translation"];
+			$translated_response = $translated_response_list[1]["translation"];
 		} else {
 			// It is plain text
-			$translated_chat_agent_response = $translated_chat_agent_response_list[1];
+			$translated_response = $translated_response_list[1];
 		}
 	
 	} else {
 		
-		$translated_chat_agent_response = 'none';
+		$translated_response = 'none';
 		
 	}
 	
@@ -460,7 +421,7 @@ EOT;
 	// web page via Ajax.
 	
 	
-	// Correction (by proofreader_agent) is always being done.
+	// Correction is always calculated.
 	// If the user did not ask to display the
 	// corrected text then setting $corrected_user_message = 'none'
 	// causes the correction to not be displayed on the page.
@@ -475,8 +436,8 @@ EOT;
 		'corrected_user_message' => $corrected_user_message,
 		'input_message' => $input_message,
 		'uncorrected_user_message' => $uncorrected_user_message,
-		'chat_agent_response' => $chat_agent_response, 
-		"translated_chat_agent_response" => $translated_chat_agent_response);
+		'assistant_response' => $assistant_response, 
+		"translated_response" => $translated_response);
 	
 	
 	
@@ -490,9 +451,9 @@ EOT;
 		'check_variable' => $mood, 
 		'text_to_speak' => $text_to_speak, 
 		'speak_status' => $speak_request,
-		'chat_text' => $chat_agent_response, 
+		'chat_text' => $assistant_response, 
 		'corrected_text' => $corrected_user_message,
-		"translated_text" => $translated_chat_agent_response);
+		"translated_text" => $translated_response);
 	
   	echo json_encode($response);
 	

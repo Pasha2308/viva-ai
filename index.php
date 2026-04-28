@@ -11,7 +11,7 @@ include "php/name_config.php";
     <meta name="robots" content="noindex, nofollow">
     
     <meta charset="utf-8">
-    <title>E-Bot English Practice Chatbot</title>
+    <title>VivaAI - AI Speaking Test</title>
 	
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Practice English conversation using AI.">
@@ -24,7 +24,7 @@ include "php/name_config.php";
 	
     <!-- CSS Stylesheets -->
     <link rel="stylesheet" href="css/w3.css">
-    <link rel="stylesheet" href="css/e-bot.css">
+    <link rel="stylesheet" href="css/vivaai.css">
 	
 </head>
 
@@ -71,7 +71,7 @@ include "php/name_config.php";
         </div>
 
         <div id="test-page" class="spa-page">
-            <p class="w3-small w3-padding-left w3-text-white hide-on-phone space-letters"><a href="https://github.com/vbookshelf/E-Bot-English-Practice-Chatbot" target="_blank">GitHub</a></p>
+            <p class="w3-small w3-padding-left w3-text-white hide-on-phone space-letters"><a href="#" target="_blank">GitHub</a></p>
             <div class="container w3-animate-opacity">
         <div id="main-image" class="w3-center w3-round w3-padding w3-text-blue">
 			
@@ -79,21 +79,17 @@ include "php/name_config.php";
 				<i class="fa fa-commenting-o w3-text-red" style="font-size:75px"></i> 
 			-->
 			
-			<!--
-            <h2 class="space-letters"><b>E-Bot English Practice <span class="hide-on-phone">AI Chatbot</span></b></h2>
-			-->
-			
-			<h2 class="space-letters"><b>E-Bot English Practice Chatbot</b></h2>
+			<h2 class="space-letters"><b>VivaAI Speaking Practice</b></h2>
 			
             <h4 class="space-letters"><b>Practice English conversation using AI</b></h4>
 		
         </div>
         <main id="chat" class="texts">
             <div class="message-container">
-                <span id="first-chat-block" class="set-color1"><b>&#x2022 E-Bot</b></span>
+                <span id="first-chat-block" class="set-color1"><b>&#x2022 VivaAI</b></span>
                 
                 <ul class="lighter-black instruction-text">
-					<li>Hi. Welcome to E-Bot.</li>
+					<li>Hi. Welcome to VivaAI.</li>
 					<li>Please select your first language in the settings menu.</li>
 					<li>For best results please use the Google Chrome browser.</li>
 					<li>Also, don't allow your browser to translate this page.</li>
@@ -102,7 +98,7 @@ include "php/name_config.php";
 						- Who is Beyoncé?<br>
 						- Is there life on other planets?
 					</li>
-					<li>Please be kind. E-Bot will make mistakes.</li>	
+					<li>Please be kind. VivaAI can still make mistakes.</li>	
 					
                 </ul>
             </div>
@@ -254,11 +250,11 @@ include "php/name_config.php";
         </div>
     </div>
     <!-- The page gets scrolled up to this id. -->
-    <div id="e-bot"></div>
+    <div id="vivaai-bottom"></div>
     <!-- Onload a click is simulated on this to scroll the page to id="bottom-bar" -->
-    <a href="#e-bot" id="scroll-page-up"></a>
+    <a href="#vivaai-bottom" id="scroll-page-up"></a>
     <a href="#test100" id="scroll-to-last-message"></a>
-    <a href="#chatbot" id="scroll-to-bot-message"></a>
+    <a href="#assistant-message" id="scroll-to-assistant-message"></a>
 	
 </body>
 </html>
@@ -923,7 +919,7 @@ The language code varuable (lang_code) is set in this file.
 		
         // Format the input into paragraphs. This
         // adds paragraph html to the students chat.
-        // It's main use is in Maiya's chat where the long response needs 
+        // Useful for preserving readable multi-line user input.
         // to be formatted into separate paragraphs.
         $my_message = formatResponse($my_message);
 		
@@ -943,7 +939,7 @@ The language code varuable (lang_code) is set in this file.
 		
         // Delete the id from the message container.
         // It will get added again when the message container is created.
-        var element = document.getElementById("chatbot");
+        var element = document.getElementById("assistant-message");
         element.removeAttribute("id");
 		
         // Send an AJAX request to the server to process the form data
@@ -1010,7 +1006,7 @@ The language code varuable (lang_code) is set in this file.
 				
                 // For Deaf Accessibility.
                 // Deaf people won't know that the audio is on
-                // and the chatbot is speaking.
+                // and the assistant is speaking.
                 if (speak_status == 'selected') {
                     // Handle chat agent response
                     chatText = `<p class="clickable" onclick="speakText(this.innerHTML)">${chatAgentResponse}<i class="fa fa-volume-up w3-text-teal display-block" style="font-size:18px"></i></p>`;
@@ -1044,16 +1040,16 @@ The language code varuable (lang_code) is set in this file.
                 // Delete the div containing the spinner
                 delete_spinner_div();
 				
-                // Add the message from Maiya to the chat
+                // Add the assistant message to the chat
                 addMessageToChat(input_message);
 				
                 // Scroll the page up by clicking on a div at the bottom of the page.
                 // ***** Change this to click on the bot message div, then delete the div id ****
-                simulateClick('scroll-to-bot-message');
+                simulateClick('scroll-to-assistant-message');
 				
                 // Delete the id from the message container.
                 // It will get added again when the message container is created.
-                var element = document.getElementById("chatbot");
+                var element = document.getElementById("assistant-message");
 				
                 element.removeAttribute("id");
 				

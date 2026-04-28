@@ -1,6 +1,6 @@
 <?php
 
-$bot_name = 'E-Bot'; 	// Give the bot a name
+$bot_name = 'VivaAI'; 	// Assistant display name
 $user_name = 'Guest';	// Set the user's name 
 
 ?>

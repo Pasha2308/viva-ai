@@ -176,7 +176,7 @@ function createMessageContainer(message) {
     // Add an id attribute. This will help to scroll to
     // the bot message. This gets detelted after the page
     // is scrolled to the bot message.
-    messageContainer.setAttribute("id", "chatbot");
+    messageContainer.setAttribute("id", "assistant-message");
 
     var messageText = document.createElement("span"); // p
 
@@ -209,7 +209,7 @@ function removeHtmlTags(str) {
     return str.replace(/(<([^>]+)>)/gi, "");
 }
 
-// Function to mute the cahtbot
+// Function to mute the assistant
 // when it is speaking.
 function quiet_please() {
     speechSynthesis.cancel();
@@ -321,19 +321,19 @@ function speak(text, speech_lang_code, speech_voice_name, speech_rate = 1) {
     // Speak the text
     speechSynthesis.speak(utterance);
     
-    // When the chatbot starts speaking display the sound bar animation
+    // When the assistant starts speaking display the sound bar animation
     hide('audioIndicator1');
     show('audioIndicator');
     
     utterance.onend = function() {
-        // When the chatbot stops speaking hide the sound bar animation
+        // When the assistant stops speaking hide the sound bar animation
         hide('audioIndicator');
         show('audioIndicator1');
 		
 		// Only when the speech synthesis ends, start the mic.
 		// If we don't use this then the event listener 
 		// will start listening while the bot is still talking.
-		// The bot will then hear it's own voice and respond to it.
+		// The assistant will then hear its own voice and respond to it.
 		
 		if (window.recognition) {
 				// Add the event listener again.
