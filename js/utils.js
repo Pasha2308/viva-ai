@@ -22,7 +22,6 @@ function clearSelectedOptions() {
 function updateSelectedLanguage(user_language) {
     var selectElement = document.getElementById("language-select");
     // translation_language = selectElement.value;
-    // console.log("Selected language: " + translation_language);
 
     // Get the <option> element you want to add the 'selected' attribute to by its value
     var optionToSelect = selectElement.querySelector('option[value="' + user_language + '"]'); 
@@ -284,9 +283,6 @@ function speak(text, speech_lang_code, speech_voice_name, speech_rate = 1) {
 	  // If the user just types then speech recognition 
 	  // is not initialized and the recognition object does not exist.
 	  if (window.recognition) {
-		  
-		  console.log('Stopping recognition...')
-	  
 		  // Pause (delete) the event listener.
 		  // The handleEnd function identifies which event listener we want.
 		  window.recognition.removeEventListener('end', handleEnd);
@@ -340,9 +336,6 @@ function speak(text, speech_lang_code, speech_voice_name, speech_rate = 1) {
 		// The bot will then hear it's own voice and respond to it.
 		
 		if (window.recognition) {
-				
-				console.log('Restarting recognition...')
-			  
 				// Add the event listener again.
 				// The handleEnd function identifies which event listener we want.
 				window.recognition.addEventListener('end', handleEnd);

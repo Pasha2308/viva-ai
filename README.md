@@ -1,5 +1,42 @@
-# E-Bot English Practice Chatbot
-### Practice English conversation using AI
+# VivaAI – AI Speaking Test & Interview Simulator
+
+## 🚀 What it does
+VivaAI helps users practice spoken English with AI-powered evaluation and coaching.  
+It supports guided speaking tests, real-time feedback cues, and interview simulation so learners can improve confidence and communication quality faster.
+
+## ✨ Features
+- Speaking Test Mode
+- Interview Mode
+- AI Evaluation (IELTS-style)
+- Voice input & feedback
+- Progress dashboard
+
+## 🧠 Tech Stack
+- PHP (backend)
+- Groq API (LLM)
+- JavaScript (frontend)
+- Web Speech API
+
+## ⚙️ Setup Instructions
+1. Clone repo
+2. Create `.env` file:
+   `GROQ_API_KEY=your_key_here`
+3. Run with XAMPP
+4. Open [http://localhost/viva-ai](http://localhost/viva-ai)
+
+## 📸 Screenshots
+- Home page (placeholder)
+- Speaking Test page (placeholder)
+- Interview Mode page (placeholder)
+- Dashboard page (placeholder)
+
+## 🎬 Demo GIF
+- Demo workflow GIF (placeholder)
+
+## 🎯 Future Improvements
+- Real-time scoring
+- Mobile app
+- Advanced analytics
 
 Live Demo:<br>
 https://e-bot.woza.work/
@@ -167,7 +204,7 @@ For example, if you wanted to create a chatbot that would help people pratice Th
         const voices = speechSynthesis.getVoices();
         voices
           .filter(v => v.lang === 'en-US')
-          .forEach(v => console.log(`${v.name} (${v.lang})`));
+          .forEach(v => v.name);
       };
     </script>
     ```

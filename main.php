@@ -12,33 +12,9 @@ include "php/php_utils_revised.php";
 // an error occurs.
 
 
-// ADD YOUR GOOGLE API KEY
-// Add your gemini API key to the ebot_config.ini.txt file.
-// Change the file name from ebot_config.ini.txt to ebot_config.ini
-// The ebot_config.ini file gets loaded in the php funtion that
-// makes the API request.
-
-
-// *** IMPORTANT SECURITY NOTE ***
-// The ebot_config.ini file is currently located inside the website root folder.
-// Please Secure your API Key by moving the ebot_config.ini file
-// to a folder that's located outside your website root folder.
-// Specify the path to the ebot_config.ini file here.
-
-$path_to_config_ini = 'ebot_config.ini';
-
-
-$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent";
-
-
-
 //-----------
 // Settings
 //-----------
-
-$temperature = 0.5;
-
-$max_tokens = 300;
 
 // Set how fast the text is spoken
 $speech_rate = 1;
@@ -59,7 +35,7 @@ speechSynthesis.onvoiceschanged = () => {
   const voices = speechSynthesis.getVoices();
   voices
     .filter(v => v.lang === 'en-US')
-    .forEach(v => console.log(`${v.name} (${v.lang})`));
+    .forEach(v => v.name);
 };
 </script>
 */
@@ -115,6 +91,133 @@ function test_input(&$data) {
 		
 		return $data;
 	}
+
+function generate_question($level, $category) {
+	$level = trim((string) $level);
+	$category = trim((string) $category);
+	if ($level === "") { $level = "intermediate"; }
+	if ($category === "") { $category = "personal"; }
+
+	$system_prompt = "You are an IELTS speaking examiner. Generate exactly one natural speaking-test question. Return plain text only.";
+	$user_prompt = "Generate one {$level} level {$category} speaking question. Keep it concise and natural.";
+	$question = call_groq_api($user_prompt, $system_prompt);
+
+	if ($question === "Error: Unable to fetch response" || trim($question) === "") {
+		return "Tell me about a recent experience that was meaningful to you.";
+	}
+
+	return trim($question);
+}
+
+function adjust_level_by_score($level, $overall_band) {
+	$levels = array("beginner", "intermediate", "advanced");
+	$current_index = array_search($level, $levels, true);
+	if ($current_index === false) {
+		$current_index = 1;
+	}
+
+	$score = (float) $overall_band;
+	if ($score > 7 && $current_index < 2) {
+		$current_index += 1;
+	}
+	if ($score < 5 && $current_index > 0) {
+		$current_index -= 1;
+	}
+
+	return $levels[$current_index];
+}
+
+// Speaking test mode endpoints
+if (isset($_REQUEST["action"])) {
+	$action = $_REQUEST["action"];
+
+	if ($action === "start_test") {
+		$mode = isset($_REQUEST["test_mode"]) ? $_REQUEST["test_mode"] : "speaking";
+		$mode = test_input($mode);
+		$level = isset($_REQUEST["test_level"]) ? test_input($_REQUEST["test_level"]) : "intermediate";
+		$category = isset($_REQUEST["test_category"]) ? test_input($_REQUEST["test_category"]) : "personal";
+
+		$_SESSION["test_mode"] = $mode;
+		$_SESSION["test_level"] = $level;
+		$_SESSION["test_category"] = $category;
+		$_SESSION["test_questions"] = array();
+		$_SESSION["test_index"] = 0;
+		$_SESSION["test_total_questions"] = 5;
+		$first_question = generate_question($level, $category);
+		$_SESSION["test_questions"][] = $first_question;
+
+		echo json_encode(array(
+			"success" => true,
+			"mode" => $mode,
+			"question" => $first_question,
+			"time_limit" => 60,
+			"has_more_questions" => true,
+			"question_number" => 1,
+			"total_questions" => 5
+		));
+		exit;
+	}
+
+	if ($action === "submit_test_answer") {
+		$answer = isset($_REQUEST["my_message"]) ? $_REQUEST["my_message"] : "";
+		$answer = test_input($answer);
+
+		$questions = isset($_SESSION["test_questions"]) ? $_SESSION["test_questions"] : array();
+		$index = isset($_SESSION["test_index"]) ? (int) $_SESSION["test_index"] : 0;
+		$current_question = isset($questions[$index]) ? $questions[$index] : "";
+
+		$answer_context = "Question: " . $current_question . "\nUser Answer: " . $answer;
+		$evaluation = evaluate_answer_with_groq($answer_context);
+
+		$index = $index + 1;
+		$_SESSION["test_index"] = $index;
+		$total_questions = isset($_SESSION["test_total_questions"]) ? (int) $_SESSION["test_total_questions"] : 5;
+
+		$level = isset($_SESSION["test_level"]) ? $_SESSION["test_level"] : "intermediate";
+		$level = adjust_level_by_score($level, $evaluation["overall_band"] ?? 0);
+		$_SESSION["test_level"] = $level;
+		$category = isset($_SESSION["test_category"]) ? $_SESSION["test_category"] : "personal";
+		if (isset($_SESSION["test_mode"]) && $_SESSION["test_mode"] === "interview") {
+			$category = "interview";
+		}
+
+		$has_more = $index < $total_questions;
+		$next_question = null;
+		if ($has_more) {
+			$next_question = generate_question($level, $category);
+			$_SESSION["test_questions"][] = $next_question;
+		}
+
+		echo json_encode(array(
+			"success" => true,
+			"mode" => isset($_SESSION["test_mode"]) ? $_SESSION["test_mode"] : "speaking",
+			"evaluation" => $evaluation,
+			"next_question" => $next_question,
+			"time_limit" => 60,
+			"has_more_questions" => $has_more,
+			"question_number" => min($index + 1, $total_questions),
+			"current_answer_number" => $index,
+			"total_questions" => $total_questions
+		));
+		exit;
+	}
+
+	if ($action === "get_coaching_tips") {
+		$user_answer = isset($_REQUEST["user_answer"]) ? test_input($_REQUEST["user_answer"]) : "";
+		$evaluation_raw = isset($_REQUEST["evaluation_json"]) ? $_REQUEST["evaluation_json"] : "{}";
+		$evaluation = json_decode($evaluation_raw, true);
+		if (!is_array($evaluation)) {
+			$evaluation = array();
+		}
+
+		$coaching = get_coaching_tips_with_groq($user_answer, $evaluation);
+		echo json_encode(array(
+			"success" => true,
+			"coaching" => $coaching
+		));
+		exit;
+	}
+}
 	
 
 

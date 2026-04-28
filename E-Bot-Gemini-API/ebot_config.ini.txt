@@ -1,3 +1,0 @@
-[api]
-API_KEY = 'YOUR-API-KEY';
-
